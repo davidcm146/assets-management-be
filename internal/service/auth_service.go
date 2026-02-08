@@ -19,7 +19,7 @@ func NewAuthService(userRepo *repository.UserRepository) *AuthService {
 	return &AuthService{userRepo: userRepo}
 }
 
-func (s *AuthService) Login(ctx context.Context, username, password string) (string, error) {
+func (s *AuthService) LoginService(ctx context.Context, username, password string) (string, error) {
 	user, err := s.userRepo.GetByUsername(ctx, username)
 	if err != nil {
 		return "", err
@@ -33,7 +33,7 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (str
 	claims := jwt.MapClaims{
 		"sub":      user.ID,
 		"username": user.Username,
-		"role":     user.Role,
+		"role":     user.Role.String(),
 		"exp":      jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 	}
 
@@ -46,6 +46,6 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (str
 	return tokenString, nil
 }
 
-func (s *AuthService) Register(ctx context.Context, u *model.User) error {
+func (s *AuthService) RegisterService(ctx context.Context, u *model.User) error {
 	return s.userRepo.Create(ctx, u)
 }

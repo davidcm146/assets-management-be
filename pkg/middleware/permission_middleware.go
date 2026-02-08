@@ -8,11 +8,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func PermissionMiddleware(requiredRole model.Role) gin.HandlerFunc {
+func PermissionMiddleware(requiredRole []model.Role) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role := c.MustGet("role")
 
-		if role != requiredRole && role != model.IT {
+		isAllowed := false
+		for _, r := range requiredRole {
+			if role == r.String() {
+				isAllowed = true
+				break
+			}
+		}
+		if !isAllowed {
 			c.AbortWithStatusJSON(http.StatusForbidden, &error_middleware.AppError{
 				HTTPStatus: http.StatusForbidden,
 				Code:       error_middleware.CodeForbidden,

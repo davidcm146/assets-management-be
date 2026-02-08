@@ -1,8 +1,9 @@
 package error_middleware
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func ErrorHandler() gin.HandlerFunc {
@@ -15,11 +16,15 @@ func ErrorHandler() gin.HandlerFunc {
 
 		err := c.Errors.Last().Err
 		if appErr, ok := err.(*AppError); ok {
-			c.JSON(appErr.HTTPStatus, gin.H{
+			response := gin.H{
 				"http_status": appErr.HTTPStatus,
 				"code":        appErr.Code,
 				"message":     appErr.Message,
-			})
+			}
+			if appErr.Details != nil {
+				response["details"] = appErr.Details
+			}
+			c.JSON(appErr.HTTPStatus, response)
 
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{

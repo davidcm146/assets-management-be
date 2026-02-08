@@ -16,15 +16,15 @@ CREATE TABLE audit_logs (
     created_at TIMESTAMP
 );
 
-CREATE TABLE assets (
+CREATE TABLE loan_slips (
     id SERIAL PRIMARY KEY,
-    owner_name VARCHAR,
+    borrower_name VARCHAR,
     department VARCHAR,
     position VARCHAR,
     name VARCHAR,
     description TEXT,
     status VARCHAR,
-    serial_number BIGINT,
+    serial_number VARCHAR,
     images TEXT[],
     borrowed_date TIMESTAMP,
     returned_date TIMESTAMP,
@@ -46,8 +46,8 @@ CREATE TABLE notifications (
 );
 
 -- Foreign key constraints
-ALTER TABLE assets
-    ADD CONSTRAINT fk_assets_created_by
+ALTER TABLE loan_slips
+    ADD CONSTRAINT fk_loan_slips_created_by
     FOREIGN KEY (created_by) REFERENCES users(id);
 
 ALTER TABLE audit_logs
@@ -64,6 +64,6 @@ ALTER TABLE notifications
 
 -- +goose Down
 DROP TABLE IF EXISTS notifications;
-DROP TABLE IF EXISTS assets;
+DROP TABLE IF EXISTS loan_slips;
 DROP TABLE IF EXISTS audit_logs;
 DROP TABLE IF EXISTS users;
