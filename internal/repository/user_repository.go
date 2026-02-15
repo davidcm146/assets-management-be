@@ -8,15 +8,21 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type UserRepository struct {
+type UserRepository interface {
+	Create(ctx context.Context, u *model.User) error
+	GetByUsername(ctx context.Context, username string) (*model.User, error)
+	GetByID(ctx context.Context, id int) (*model.User, error)
+}
+
+type userRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewUserRepository(db *pgxpool.Pool) *UserRepository {
-	return &UserRepository{db: db}
+func NewUserRepository(db *pgxpool.Pool) UserRepository {
+	return &userRepository{db: db}
 }
 
-func (r *UserRepository) Create(ctx context.Context, u *model.User) error {
+func (r *userRepository) Create(ctx context.Context, u *model.User) error {
 	hash, _ := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	role := model.Admin
 	_, err := r.db.Exec(ctx,
@@ -26,7 +32,7 @@ func (r *UserRepository) Create(ctx context.Context, u *model.User) error {
 	return err
 }
 
-func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*model.User, error) {
+func (r *userRepository) GetByUsername(ctx context.Context, username string) (*model.User, error) {
 	row := r.db.QueryRow(ctx,
 		"SELECT id, username, role, password FROM users WHERE username=$1",
 		username,
@@ -39,7 +45,7 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*m
 	return &user, nil
 }
 
-func (r *UserRepository) GetByID(ctx context.Context, id int) (*model.User, error) {
+func (r *userRepository) GetByID(ctx context.Context, id int) (*model.User, error) {
 	row := r.db.QueryRow(ctx,
 		"SELECT id, username, role FROM users WHERE id=$1",
 		id,

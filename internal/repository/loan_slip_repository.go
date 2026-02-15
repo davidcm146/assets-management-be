@@ -3,19 +3,31 @@ package repository
 import (
 	"context"
 
+	"github.com/davidcm146/assets-management-be.git/internal/dto"
 	"github.com/davidcm146/assets-management-be.git/internal/model"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type LoanSlipRepository struct {
+type LoanSlipRepository interface {
+	FindByID(ctx context.Context, id int) (*model.LoanSlip, error)
+	List(ctx context.Context, query *dto.LoanSlipQuery) ([]*model.LoanSlip, error)
+	Count(ctx context.Context, query *dto.LoanSlipQuery) (int, error)
+	Create(ctx context.Context, loanSlip *model.LoanSlip) error
+	Update(ctx context.Context, loanSlip *model.LoanSlip) error
+	FindOverdue(ctx context.Context) ([]*model.LoanSlip, error)
+	MarkAsOverdue(ctx context.Context, id int) error
+	MarkOverdueNotified(ctx context.Context, id int) error
+}
+
+type loanSlipRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewLoanSlipRepository(db *pgxpool.Pool) *LoanSlipRepository {
-	return &LoanSlipRepository{db: db}
+func NewLoanSlipRepository(db *pgxpool.Pool) LoanSlipRepository {
+	return &loanSlipRepository{db: db}
 }
 
-func (r *LoanSlipRepository) Create(ctx context.Context, loanSlip *model.LoanSlip) error {
+func (r *loanSlipRepository) Create(ctx context.Context, loanSlip *model.LoanSlip) error {
 	status := model.Borrowing
 	_, err := r.db.Exec(ctx,
 		"INSERT INTO loan_slips (name, borrower_name, department, position, description, status, serial_number, images, created_by, borrowed_date, returned_date, updated_at, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())",
@@ -24,7 +36,7 @@ func (r *LoanSlipRepository) Create(ctx context.Context, loanSlip *model.LoanSli
 	return err
 }
 
-func (r *LoanSlipRepository) Update(ctx context.Context, loanSlip *model.LoanSlip) error {
+func (r *loanSlipRepository) Update(ctx context.Context, loanSlip *model.LoanSlip) error {
 	_, err := r.db.Exec(ctx,
 		"UPDATE loan_slips SET name=$1, borrower_name=$2, department=$3, position=$4, description=$5, status=$6, serial_number=$7, images=$8, borrowed_date=$9, returned_date=$10, updated_at=NOW() WHERE id=$11",
 		loanSlip.Name, loanSlip.BorrowerName, loanSlip.Department, loanSlip.Position, loanSlip.Description, loanSlip.Status, loanSlip.SerialNumber, loanSlip.Images, loanSlip.BorrowedDate, loanSlip.ReturnedDate, loanSlip.ID,
@@ -32,7 +44,7 @@ func (r *LoanSlipRepository) Update(ctx context.Context, loanSlip *model.LoanSli
 	return err
 }
 
-func (r *LoanSlipRepository) FindByID(ctx context.Context, id int) (*model.LoanSlip, error) {
+func (r *loanSlipRepository) FindByID(ctx context.Context, id int) (*model.LoanSlip, error) {
 	row := r.db.QueryRow(ctx,
 		`SELECT id, name, borrower_name, department, position, description, status, serial_number, images, created_by, borrowed_date, returned_date, updated_at, created_at
 		 FROM loan_slips WHERE id = $1`, id)
@@ -58,4 +70,72 @@ func (r *LoanSlipRepository) FindByID(ctx context.Context, id int) (*model.LoanS
 		return nil, err
 	}
 	return &loanSlip, nil
+}
+
+func (r *loanSlipRepository) FindOverdue(ctx context.Context) ([]*model.LoanSlip, error) {
+	query := `
+		SELECT id, borrower_name, department, position,
+		       name, description, status, serial_number,
+		       images, borrowed_date, returned_date,
+		       created_by, updated_at, created_at
+		FROM loan_slips
+		WHERE returned_date < NOW()
+		AND status == $1
+		AND overdue_notified = FALSE
+	`
+
+	rows, err := r.db.Query(ctx, query, model.Borrowing)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []*model.LoanSlip
+
+	for rows.Next() {
+		var loan model.LoanSlip
+		err := rows.Scan(
+			&loan.ID,
+			&loan.BorrowerName,
+			&loan.Department,
+			&loan.Position,
+			&loan.Name,
+			&loan.Description,
+			&loan.Status,
+			&loan.SerialNumber,
+			&loan.Images,
+			&loan.BorrowedDate,
+			&loan.ReturnedDate,
+			&loan.CreatedBy,
+			&loan.UpdatedAt,
+			&loan.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, &loan)
+	}
+
+	return results, nil
+}
+
+func (r *loanSlipRepository) MarkAsOverdue(ctx context.Context, id int) error {
+	query := `
+		UPDATE loan_slips
+		SET status = $1, updated_at = NOW()
+		WHERE id = $2
+	`
+	_, err := r.db.Exec(ctx, query, model.Overdue, id)
+	return err
+}
+
+func (r *loanSlipRepository) MarkOverdueNotified(ctx context.Context, id int) error {
+	query := `
+		UPDATE loan_slips
+		SET overdue_notified = TRUE
+		WHERE id = $1
+	`
+	_, err := r.db.Exec(ctx, query, id)
+	return err
 }

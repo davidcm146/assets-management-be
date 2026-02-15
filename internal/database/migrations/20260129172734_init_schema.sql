@@ -38,7 +38,7 @@ CREATE TABLE notifications (
     recipient_id INTEGER,
     sender_id INTEGER,
     title VARCHAR,
-    type VARCHAR,
+    type INTEGER,
     content VARCHAR,
     is_read BOOLEAN,
     read_at TIMESTAMP,
@@ -62,8 +62,33 @@ ALTER TABLE notifications
     ADD CONSTRAINT fk_notifications_sender
     FOREIGN KEY (sender_id) REFERENCES users(id);
 
+CREATE INDEX idx_loan_slips_created_by
+ON loan_slips (created_by);
+
+CREATE INDEX idx_loan_slips_position
+ON loan_slips (position);
+
+CREATE INDEX idx_loan_slips_department
+ON loan_slips (department);
+
+CREATE INDEX idx_loan_slips_borrower_name
+ON loan_slips (borrower_name);
+
+CREATE INDEX idx_loan_slips_borrowed_date
+ON loan_slips (borrowed_date DESC);
+
+CREATE INDEX idx_loan_slips_created_at
+ON loan_slips (created_at DESC);
+
 -- +goose Down
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS loan_slips;
 DROP TABLE IF EXISTS audit_logs;
 DROP TABLE IF EXISTS users;
+DROP INDEX IF EXISTS idx_loan_slips_borrowed_date;
+DROP INDEX IF EXISTS idx_loan_slips_created_at;
+DROP INDEX IF EXISTS idx_loan_slips_created_by;
+DROP INDEX IF EXISTS idx_loan_slips_position;
+DROP INDEX IF EXISTS idx_loan_slips_department;
+DROP INDEX IF EXISTS idx_loan_slips_borrower_name;
+
