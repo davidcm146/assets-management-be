@@ -5,6 +5,7 @@ import (
 	"mime/multipart"
 	"reflect"
 	"strings"
+	// "time"
 
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
@@ -57,6 +58,10 @@ func HandleValidationError(err error, dto any) map[string]any {
 			errors[fieldKey] = fieldLabel + " phải lớn hơn " + fe.Param()
 		case "lt":
 			errors[fieldKey] = fieldLabel + " phải nhỏ hơn " + fe.Param()
+		case "gtefield":
+			errors[fieldKey] = fieldLabel + " không được trước " + fe.Param()
+		case "images":
+			errors[fieldKey] = fieldLabel + " không đúng format"
 		default:
 			errors[fieldKey] = fieldLabel + " không hợp lệ"
 		}
@@ -120,6 +125,5 @@ func RegisterValidators() error {
 
 		return fld.Name
 	})
-
 	return nil
 }

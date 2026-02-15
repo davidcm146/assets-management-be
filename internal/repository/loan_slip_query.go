@@ -30,7 +30,7 @@ func buildLoanSlipQuery(query *dto.LoanSlipQuery) (string, []any) {
 
 	if query.Status != "" {
 		conds = append(conds, fmt.Sprintf("status=$%d", argIdx))
-		args = append(args, model.StringToStatus(query.Status))
+		args = append(args, model.ParseStatus(query.Status))
 		argIdx++
 	}
 
@@ -67,7 +67,7 @@ func buildLoanSlipQuery(query *dto.LoanSlipQuery) (string, []any) {
 	return strings.Join(conds, " AND "), args
 }
 
-func (r *LoanSlipRepository) List(ctx context.Context, query *dto.LoanSlipQuery) ([]*model.LoanSlip, error) {
+func (r *loanSlipRepository) List(ctx context.Context, query *dto.LoanSlipQuery) ([]*model.LoanSlip, error) {
 	where, args := buildLoanSlipQuery(query)
 	offset := (query.Page - 1) * query.Limit
 	orderBy := buildOrderByClause(query.Sort, query.Order)
@@ -145,7 +145,7 @@ func scanLoanSlips(rows interface {
 	return loanSlips, nil
 }
 
-func (r *LoanSlipRepository) Count(ctx context.Context, query *dto.LoanSlipQuery) (int, error) {
+func (r *loanSlipRepository) Count(ctx context.Context, query *dto.LoanSlipQuery) (int, error) {
 	where, args := buildLoanSlipQuery(query)
 	sql := fmt.Sprintf(`
 		SELECT COUNT(*)

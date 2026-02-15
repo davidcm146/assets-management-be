@@ -32,6 +32,17 @@ func (r Role) String() string {
 	}
 }
 
+func ParseRole(s string) Role {
+	switch s {
+	case "admin":
+		return Admin
+	case "IT":
+		return IT
+	default:
+		return 0
+	}
+}
+
 func (r Role) MarshalJSON() ([]byte, error) {
 	return utils.MarshalEnum(r)
 }

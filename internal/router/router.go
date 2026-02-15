@@ -9,8 +9,9 @@ import (
 )
 
 type Handlers struct {
-	AuthHandler     *handler.AuthHandler
-	LoanSlipHandler *handler.LoanSlipHandler
+	AuthHandler         handler.AuthHandler
+	LoanSlipHandler     handler.LoanSlipHandler
+	NotificationHandler handler.NotificationHandler
 }
 
 type RouterParams struct {
@@ -42,6 +43,9 @@ func NewRouter(params RouterParams) *gin.Engine {
 		protected_api.GET("/loan-slips/:id", params.Handlers.LoanSlipHandler.LoanSlipDetailHandler)
 		protected_api.POST("/loan-slips", middleware.PermissionMiddleware([]model.Role{model.Admin, model.IT}), params.Handlers.LoanSlipHandler.CreateLoanSlipHandler)
 		protected_api.PUT("/loan-slips/:id", middleware.PermissionMiddleware([]model.Role{model.Admin, model.IT}), params.Handlers.LoanSlipHandler.UpdateLoanSlipHandler)
+		protected_api.GET("/notifications", middleware.PermissionMiddleware([]model.Role{model.Admin, model.IT}), params.Handlers.NotificationHandler.ListHandler)
+		protected_api.PUT("/notifications/:id", middleware.PermissionMiddleware([]model.Role{model.Admin, model.IT}), params.Handlers.NotificationHandler.MarkAsReadHandler)
+		protected_api.GET("/notifications/unread/count", middleware.PermissionMiddleware([]model.Role{model.Admin, model.IT}), params.Handlers.NotificationHandler.CountUnreadHandler)
 	}
 
 	return r
