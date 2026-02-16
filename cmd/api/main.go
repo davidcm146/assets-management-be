@@ -80,6 +80,7 @@ func main() {
 	}); err != nil {
 		panic(err)
 	}
+	cronScheduler.Start()
 
 	<-ctx.Done()
 	cronScheduler.Stop()

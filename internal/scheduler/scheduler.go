@@ -1,14 +1,26 @@
 package scheduler
 
-import "github.com/robfig/cron/v3"
+import (
+	"time"
+
+	"github.com/robfig/cron/v3"
+)
 
 type Scheduler struct {
 	cron *cron.Cron
 }
 
 func NewScheduler() *Scheduler {
+	loc, _ := time.LoadLocation("Asia/Ho_Chi_Minh")
+
 	return &Scheduler{
-		cron: cron.New(),
+		cron: cron.New(
+			cron.WithLocation(loc),
+			cron.WithChain(
+				cron.Recover(cron.DefaultLogger),
+				cron.SkipIfStillRunning(cron.DefaultLogger),
+			),
+		),
 	}
 }
 
