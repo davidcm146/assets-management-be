@@ -53,9 +53,9 @@ func (j *OverdueJob) Run() {
 		notifications = append(notifications, &model.Notification{
 			RecipientID: slip.CreatedBy,
 			SenderID:    nil,
-			Title:       "Loan Slip Overdue",
+			Title:       "Phiếu mượn quá hạn",
 			Type:        int(model.NotificationTypeLoanSlipOverdue),
-			Content:     "Loan slip \"" + slip.Name + "\" has passed returned date.",
+			Content:     "Phiếu mượn tài sản \"" + slip.Name + "\" đã quá hạn trả.",
 		})
 	}
 
