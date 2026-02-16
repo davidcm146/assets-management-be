@@ -13,7 +13,7 @@ CREATE TABLE audit_logs (
     action VARCHAR,
     device_name VARCHAR,
     ip_address VARCHAR,
-    created_at TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
 CREATE TABLE loan_slips (
@@ -26,11 +26,11 @@ CREATE TABLE loan_slips (
     status VARCHAR,
     serial_number VARCHAR,
     images TEXT[],
-    borrowed_date TIMESTAMP,
-    returned_date TIMESTAMP,
+    borrowed_date TIMESTAMP WITH TIME ZONE,
+    returned_date TIMESTAMP WITH TIME ZONE,
     created_by INTEGER NOT NULL,
-    updated_at TIMESTAMP,
-    created_at TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
 CREATE TABLE notifications (
@@ -39,10 +39,11 @@ CREATE TABLE notifications (
     sender_id INTEGER,
     title VARCHAR,
     type INTEGER,
+    payload JSONB,
     content VARCHAR,
     is_read BOOLEAN,
-    read_at TIMESTAMP,
-    created_at TIMESTAMP
+    read_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
 -- Foreign key constraints
@@ -80,6 +81,9 @@ ON loan_slips (borrowed_date DESC);
 CREATE INDEX idx_loan_slips_created_at
 ON loan_slips (created_at DESC);
 
+CREATE INDEX idx_notifications_payload
+ON notifications USING GIN (payload);
+
 -- +goose Down
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS loan_slips;
@@ -91,4 +95,4 @@ DROP INDEX IF EXISTS idx_loan_slips_created_by;
 DROP INDEX IF EXISTS idx_loan_slips_position;
 DROP INDEX IF EXISTS idx_loan_slips_department;
 DROP INDEX IF EXISTS idx_loan_slips_borrower_name;
-
+DROP INDEX IF EXISTS idx_notifications_payload;

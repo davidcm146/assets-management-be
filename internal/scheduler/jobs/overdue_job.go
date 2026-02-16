@@ -2,6 +2,8 @@ package jobs
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/davidcm146/assets-management-be.git/internal/model"
@@ -25,7 +27,7 @@ func (j *OverdueJob) Name() string {
 }
 
 func (j *OverdueJob) Schedule() string {
-	return "0 9 * * *"
+	return "*/5 * * * *"
 }
 
 func (j *OverdueJob) Run() {
@@ -50,12 +52,28 @@ func (j *OverdueJob) Run() {
 			continue
 		}
 
+		payloadObj := model.NotificationPayload{
+			Entity: "loan_slip",
+			Action: "navigate",
+			URL:    fmt.Sprintf("/loan-slips/%d", slip.ID),
+			Extra: map[string]interface{}{
+				"id":   slip.ID,
+				"name": slip.Name,
+			},
+		}
+		payloadBytes, err := json.Marshal(payloadObj)
+		if err != nil {
+			log.Println("marshal payload failed:", err)
+			continue
+		}
+
 		notifications = append(notifications, &model.Notification{
 			RecipientID: slip.CreatedBy,
 			SenderID:    nil,
 			Title:       "Phiếu mượn quá hạn",
 			Type:        int(model.NotificationTypeLoanSlipOverdue),
 			Content:     "Phiếu mượn tài sản \"" + slip.Name + "\" đã quá hạn trả.",
+			Payload:     payloadBytes,
 		})
 	}
 

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	// "encoding/json"
 	"fmt"
 	"time"
 
@@ -29,7 +30,7 @@ func NewNotificationRepository(db *pgxpool.Pool) NotificationRepository {
 func (r *notificationRepository) Create(ctx context.Context, n *model.Notification) error {
 	query := `
 		INSERT INTO notifications
-		(recipient_id, sender_id, title, type, content, is_read, created_at)
+		(recipient_id, sender_id, title, type, payload, content, is_read, created_at)
 		VALUES ($1,$2,$3,$4,$5,false,$6)
 		RETURNING id
 	`
@@ -39,8 +40,9 @@ func (r *notificationRepository) Create(ctx context.Context, n *model.Notificati
 		n.SenderID,
 		n.Title,
 		n.Type,
+		n.Payload,
 		n.Content,
-		time.Now(),
+		time.Now().UTC(),
 	).Scan(&n.ID)
 }
 
@@ -68,7 +70,7 @@ func (r *notificationRepository) ListByRecipient(ctx context.Context, recipientI
 
 	listQuery := `
 		SELECT id, recipient_id, sender_id, title, type,
-		       content, is_read, read_at, created_at
+		       content, payload, is_read, read_at, created_at
 	` + baseQuery +
 		fmt.Sprintf(" ORDER BY created_at DESC OFFSET $%d LIMIT $%d", argIndex, argIndex+1)
 
@@ -92,6 +94,7 @@ func (r *notificationRepository) ListByRecipient(ctx context.Context, recipientI
 			&n.Title,
 			&n.Type,
 			&n.Content,
+			&n.Payload,
 			&n.IsRead,
 			&n.ReadAt,
 			&n.CreatedAt,
@@ -137,16 +140,21 @@ func (r *notificationRepository) BulkCreate(ctx context.Context, notifications [
 		return nil
 	}
 
-	now := time.Now()
+	now := time.Now().UTC()
 	rows := make([][]interface{}, 0, len(notifications))
 
 	for _, n := range notifications {
+		// payload := n.Payload
+		// if payload == nil {
+		// 	payload = json.RawMessage(`{}`)
+		// }
 		rows = append(rows, []interface{}{
 			n.RecipientID,
 			n.SenderID,
 			n.Title,
 			n.Type,
 			n.Content,
+			string(n.Payload),
 			false,
 			now,
 		})
@@ -161,6 +169,7 @@ func (r *notificationRepository) BulkCreate(ctx context.Context, notifications [
 			"title",
 			"type",
 			"content",
+			"payload",
 			"is_read",
 			"created_at",
 		},

@@ -21,6 +21,7 @@ type LoanSlipService interface {
 	MarkAsOverdue(ctx context.Context, id int) (*model.LoanSlip, error)
 	MarkOverdueNotified(ctx context.Context, id int) (*model.LoanSlip, error)
 	GetOverdue(ctx context.Context) ([]*model.LoanSlip, error)
+	Delete(ctx context.Context, id int) error
 }
 
 type loanSlipService struct {
@@ -191,6 +192,19 @@ func (s *loanSlipService) UpdateLoanSlipService(ctx context.Context, id int, upd
 	}
 
 	return loanSlip, nil
+}
+
+func (s *loanSlipService) Delete(ctx context.Context, id int) error {
+	loanSlip, err := s.loanSlipRepo.FindByID(ctx, id)
+	if err != nil || loanSlip == nil {
+		return error_middleware.NewNotFound("Không tìm thấy phiếu mượn")
+	}
+
+	if err := s.loanSlipRepo.Delete(ctx, id); err != nil {
+		return error_middleware.NewInternal("Xóa phiếu mượn thất bại")
+	}
+
+	return nil
 }
 
 func (s *loanSlipService) LoanSlipDetailService(ctx context.Context, id int) (*dto.LoanSlipResponse, error) {

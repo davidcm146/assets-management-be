@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/davidcm146/assets-management-be.git/internal/utils"
@@ -13,15 +14,23 @@ const (
 )
 
 type Notification struct {
-	ID          int        `json:"id"`
-	RecipientID int        `json:"recipient_id"`
-	SenderID    *int       `json:"sender_id"`
-	Title       string     `json:"title"`
-	Type        int        `json:"type"`
-	Content     string     `json:"content"`
-	IsRead      bool       `json:"is_read"`
-	ReadAt      *time.Time `json:"read_at"`
-	CreatedAt   time.Time  `json:"created_at"`
+	ID          int             `json:"id"`
+	RecipientID int             `json:"recipient_id"`
+	SenderID    *int            `json:"sender_id"`
+	Title       string          `json:"title"`
+	Type        int             `json:"type"`
+	Content     string          `json:"content"`
+	IsRead      bool            `json:"is_read"`
+	ReadAt      *time.Time      `json:"read_at"`
+	CreatedAt   time.Time       `json:"created_at"`
+	Payload     json.RawMessage `json:"payload"`
+}
+
+type NotificationPayload struct {
+	Entity string                 `json:"entity"`
+	Action string                 `json:"action"`
+	URL    string                 `json:"url"`
+	Extra  map[string]interface{} `json:"extra,omitempty"`
 }
 
 func (t NotificationType) String() string {

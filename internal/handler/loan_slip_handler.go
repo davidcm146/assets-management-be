@@ -17,6 +17,7 @@ type LoanSlipHandler interface {
 	CreateLoanSlipHandler(c *gin.Context)
 	UpdateLoanSlipHandler(c *gin.Context)
 	LoanSlipDetailHandler(c *gin.Context)
+	DeleteLoanSlipHandler(c *gin.Context)
 }
 
 type loanSlipHandler struct {
@@ -161,6 +162,19 @@ func (h *loanSlipHandler) UpdateLoanSlipHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, loanSlip)
+}
+
+func (h *loanSlipHandler) DeleteLoanSlipHandler(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(error_middleware.NewBadRequest("ID không hợp lệ"))
+		return
+	}
+
+	if err = h.loanSlipService.Delete(c.Request.Context(), id); err != nil {
+		c.Error(err)
+	}
+	c.Status(http.StatusOK)
 }
 
 func (h *loanSlipHandler) LoanSlipDetailHandler(c *gin.Context) {
