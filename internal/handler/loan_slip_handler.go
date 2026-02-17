@@ -173,8 +173,9 @@ func (h *loanSlipHandler) DeleteLoanSlipHandler(c *gin.Context) {
 
 	if err = h.loanSlipService.Delete(c.Request.Context(), id); err != nil {
 		c.Error(err)
+		return
 	}
-	c.Status(http.StatusOK)
+	c.Status(http.StatusNoContent)
 }
 
 func (h *loanSlipHandler) LoanSlipDetailHandler(c *gin.Context) {

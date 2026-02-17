@@ -2,26 +2,14 @@ package config
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/joho/godotenv"
 )
 
-type ServerConfig struct {
-	Port string
-}
-
-type DBConfig struct {
-	User     string
-	Password string
-	Host     string
-	Port     string
-	DBName   string
-}
-
 type Config struct {
-	Server ServerConfig
-	DB     DBConfig
+	Server     ServerConfig
+	DB         DBConfig
+	Cloudinary CloudinaryConfig
+	Postmark   PostmarkConfig
 }
 
 func LoadConfig() (*Config, error) {
@@ -30,16 +18,10 @@ func LoadConfig() (*Config, error) {
 	}
 
 	cfg := &Config{
-		Server: ServerConfig{
-			Port: os.Getenv("PORT"),
-		},
-		DB: DBConfig{
-			User:     os.Getenv("DB_USER"),
-			Password: os.Getenv("DB_PASSWORD"),
-			Host:     os.Getenv("DB_HOST"),
-			Port:     os.Getenv("DB_PORT"),
-			DBName:   os.Getenv("DB_NAME"),
-		},
+		Server:     LoadServerConfig(),
+		DB:         LoadDatabaseConfig(),
+		Cloudinary: LoadCloudinaryConfig(),
+		Postmark:   LoadPostmarkConfig(),
 	}
 
 	return cfg, nil

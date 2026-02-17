@@ -200,6 +200,9 @@ func (s *loanSlipService) Delete(ctx context.Context, id int) error {
 		return error_middleware.NewNotFound("Không tìm thấy phiếu mượn")
 	}
 
+	if loanSlip.Status != model.Borrowing {
+		return error_middleware.NewUnprocessableEntity("Không thể xóa phiếu mượn ở trạng thái hiện tại")
+	}
 	if err := s.loanSlipRepo.Delete(ctx, id); err != nil {
 		return error_middleware.NewInternal("Xóa phiếu mượn thất bại")
 	}

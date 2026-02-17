@@ -11,6 +11,7 @@ import (
 	"github.com/davidcm146/assets-management-be.git/internal/database"
 	"github.com/davidcm146/assets-management-be.git/internal/handler"
 	"github.com/davidcm146/assets-management-be.git/internal/infrastructure/cloudinary"
+	"github.com/davidcm146/assets-management-be.git/internal/infrastructure/postmark"
 	"github.com/davidcm146/assets-management-be.git/internal/repository"
 	"github.com/davidcm146/assets-management-be.git/internal/router"
 	"github.com/davidcm146/assets-management-be.git/internal/scheduler"
@@ -39,8 +40,8 @@ func main() {
 	}
 	defer db.Close()
 
-	cloudCfg := config.LoadCloudinaryConfig()
-	cld, _ := cloudinary.NewCloudinary(cloudCfg)
+	cld, _ := cloudinary.NewCloudinary(&cfg.Cloudinary)
+	postmarkProvider := postmark.NewProvider(&cfg.Postmark)
 	uploader := cloudinary.NewCloudinaryUploader(cld)
 
 	userRepo := repository.NewUserRepository(db)
@@ -49,7 +50,7 @@ func main() {
 
 	authService := service.NewAuthService(userRepo)
 	loanSlipService := service.NewLoanSlipService(loanSlipRepo, uploader)
-	notificationService := service.NewNotificationService(notificationRepo)
+	notificationService := service.NewNotificationService(notificationRepo, postmarkProvider)
 
 	authHandler := handler.NewAuthHandler(authService, userRepo)
 	loanSlipHandler := handler.NewLoanSlipHandler(loanSlipService, uploader)

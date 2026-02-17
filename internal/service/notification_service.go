@@ -14,14 +14,19 @@ type NotificationService interface {
 	MarkAsRead(ctx context.Context, id int) error
 	CountUnread(ctx context.Context, recipientID int) (int, error)
 	BulkSend(ctx context.Context, notifications []*model.Notification) (*[]*model.Notification, error)
+	SendEmails(ctx context.Context, notifications []*model.Notification)
 }
 
 type notificationService struct {
-	repo repository.NotificationRepository
+	repo         repository.NotificationRepository
+	mailProvider MailProvider
 }
 
-func NewNotificationService(repo repository.NotificationRepository) NotificationService {
-	return &notificationService{repo: repo}
+func NewNotificationService(repo repository.NotificationRepository, mailProvider MailProvider) NotificationService {
+	return &notificationService{
+		repo:         repo,
+		mailProvider: mailProvider,
+	}
 }
 
 func (s *notificationService) Send(ctx context.Context, n *model.Notification) error {
@@ -59,6 +64,22 @@ func (s *notificationService) CountUnread(ctx context.Context, recipientID int) 
 	return s.repo.CountUnread(ctx, recipientID)
 }
 
+func (s *notificationService) SendEmails(ctx context.Context, notifications []*model.Notification) {
+	for _, n := range notifications {
+		err := s.mailProvider.Send(
+			ctx,
+			"Chiefsecurity@wyndhamgrand-phuquoc.com",
+			n.Title,
+			n.Content,
+		)
+
+		if err != nil {
+			error_middleware.NewInternal("Gửi mail xảy ra lỗi")
+			return
+		}
+	}
+}
+
 func (s *notificationService) BulkSend(ctx context.Context, notifications []*model.Notification) (*[]*model.Notification, error) {
 
 	if len(notifications) == 0 {
@@ -69,6 +90,8 @@ func (s *notificationService) BulkSend(ctx context.Context, notifications []*mod
 	if err := s.repo.BulkCreate(ctx, notifications); err != nil {
 		return nil, error_middleware.NewInternal("Tạo thông báo hàng loạt thất bại")
 	}
+
+	go s.SendEmails(context.Background(), notifications)
 
 	return &notifications, nil
 }
