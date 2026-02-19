@@ -30,7 +30,7 @@ func (p *Provider) Send(ctx context.Context, to, subject, body string) error {
 		"From":          p.from,
 		"To":            to,
 		"Subject":       subject,
-		"TextBody":      body,
+		"HtmlBody":      body,
 		"MessageStream": "outbound",
 	}
 

@@ -12,6 +12,7 @@ type Handlers struct {
 	AuthHandler         handler.AuthHandler
 	LoanSlipHandler     handler.LoanSlipHandler
 	NotificationHandler handler.NotificationHandler
+	DashboardHandler    handler.DashboardHandler
 }
 
 type RouterParams struct {
@@ -47,6 +48,10 @@ func NewRouter(params RouterParams) *gin.Engine {
 		protected_api.GET("/notifications", middleware.PermissionMiddleware([]model.Role{model.Admin, model.IT}), params.Handlers.NotificationHandler.ListHandler)
 		protected_api.PUT("/notifications/:id", middleware.PermissionMiddleware([]model.Role{model.Admin, model.IT}), params.Handlers.NotificationHandler.MarkAsReadHandler)
 		protected_api.GET("/notifications/unread/count", middleware.PermissionMiddleware([]model.Role{model.Admin, model.IT}), params.Handlers.NotificationHandler.CountUnreadHandler)
+	}
+	dashboard := protected_api.Group("/dashboard")
+	{
+		dashboard.GET("/loan-metrics", middleware.PermissionMiddleware([]model.Role{model.Admin, model.IT}), params.Handlers.DashboardHandler.GetLoanMetricsHandler)
 	}
 
 	return r

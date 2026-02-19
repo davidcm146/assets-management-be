@@ -57,8 +57,9 @@ func (j *OverdueJob) Run() {
 			Action: "navigate",
 			URL:    fmt.Sprintf("/loan-slips/%d", slip.ID),
 			Extra: map[string]interface{}{
-				"id":   slip.ID,
-				"name": slip.Name,
+				"id":            slip.ID,
+				"name":          slip.Name,
+				"returned_date": slip.ReturnedDate,
 			},
 		}
 		payloadBytes, err := json.Marshal(payloadObj)

@@ -10,6 +10,7 @@ type Config struct {
 	DB         DBConfig
 	Cloudinary CloudinaryConfig
 	Postmark   PostmarkConfig
+	Gmail      GmailConfig
 }
 
 func LoadConfig() (*Config, error) {
@@ -22,6 +23,7 @@ func LoadConfig() (*Config, error) {
 		DB:         LoadDatabaseConfig(),
 		Cloudinary: LoadCloudinaryConfig(),
 		Postmark:   LoadPostmarkConfig(),
+		Gmail:      LoadGmailConfig(),
 	}
 
 	return cfg, nil

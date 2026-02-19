@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
+	"log"
 
 	"github.com/davidcm146/assets-management-be.git/internal/error_middleware"
+	"github.com/davidcm146/assets-management-be.git/internal/mailer"
 	"github.com/davidcm146/assets-management-be.git/internal/model"
 	"github.com/davidcm146/assets-management-be.git/internal/repository"
 )
@@ -20,12 +22,14 @@ type NotificationService interface {
 type notificationService struct {
 	repo         repository.NotificationRepository
 	mailProvider MailProvider
+	renderer     *email.Renderer
 }
 
-func NewNotificationService(repo repository.NotificationRepository, mailProvider MailProvider) NotificationService {
+func NewNotificationService(renderer *email.Renderer, repo repository.NotificationRepository, mailProvider MailProvider) NotificationService {
 	return &notificationService{
 		repo:         repo,
 		mailProvider: mailProvider,
+		renderer:     renderer,
 	}
 }
 
@@ -65,18 +69,20 @@ func (s *notificationService) CountUnread(ctx context.Context, recipientID int) 
 }
 
 func (s *notificationService) SendEmails(ctx context.Context, notifications []*model.Notification) {
-	for _, n := range notifications {
-		err := s.mailProvider.Send(
-			ctx,
-			"Chiefsecurity@wyndhamgrand-phuquoc.com",
-			n.Title,
-			n.Content,
-		)
+	if len(notifications) == 0 {
+		return
+	}
 
-		if err != nil {
-			error_middleware.NewInternal("Gửi mail xảy ra lỗi")
-			return
-		}
+	data := email.BuildOverdueEmailData(notifications, 15)
+	body, err := s.renderer.RenderOverdue(data)
+	if err != nil {
+		log.Println("[EMAIL RENDER ERROR]", err)
+		return
+	}
+	err = s.mailProvider.Send(ctx, "Chiefsecurity@wyndhamgrand-phuquoc.com", "Thông báo phiếu mượn quá hạn", body)
+
+	if err != nil {
+		log.Println("[EMAIL SEND ERROR]", err)
 	}
 }
 
