@@ -97,7 +97,7 @@ func (r *loanSlipRepository) FindOverdue(ctx context.Context) ([]*model.LoanSlip
 		       images, borrowed_date, returned_date,
 		       created_by, updated_at, created_at
 		FROM loan_slips
-		WHERE returned_date < NOW()
+		WHERE DATE(returned_date) < CURRENT_DATE
 		AND status = $1
 		AND overdue_notified = FALSE
 	`

@@ -33,13 +33,19 @@ func (p *Provider) Send(ctx context.Context, to, subject, body string) error {
 		p.host,
 	)
 
-	msg := []byte(
-		fmt.Sprintf(
-			"Subject: %s\r\n\r\n%s",
-			subject,
-			body,
-		),
-	)
+	msg := []byte(fmt.Sprintf(
+		"From: %s\r\n"+
+			"To: %s\r\n"+
+			"Subject: %s\r\n"+
+			"MIME-Version: 1.0\r\n"+
+			"Content-Type: text/html; charset=\"UTF-8\"\r\n"+
+			"\r\n"+
+			"%s",
+		p.from,
+		to,
+		subject,
+		body,
+	))
 
 	addr := p.host + ":" + p.port
 
