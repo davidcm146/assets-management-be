@@ -29,6 +29,8 @@ CREATE TABLE loan_slips (
     borrowed_date TIMESTAMP WITH TIME ZONE,
     returned_date TIMESTAMP WITH TIME ZONE,
     created_by INTEGER NOT NULL,
+    returned_at TIMESTAMP WITH TIME ZONE,
+    overdue_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );

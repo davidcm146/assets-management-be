@@ -28,6 +28,8 @@ type LoanSlip struct {
 	BorrowedDate    *time.Time `json:"borrowed_date" label:"Ngày mượn"`
 	ReturnedDate    *time.Time `json:"returned_date" label:"Ngày trả"`
 	OverdueNotified bool       `json:"overdue_notified"`
+	ReturnedAt      *time.Time `json:"returned_at"`
+	OverdueAt       *time.Time `json:"overdue_at"`
 	UpdatedAt       *time.Time `json:"updated_at"`
 	CreatedAt       *time.Time `json:"created_at"`
 }

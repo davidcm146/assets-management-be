@@ -24,54 +24,71 @@ func NewDashboardRepository(db *pgxpool.Pool) DashboardRepository {
 func (r *dashboardRepository) GetLoanMetrics(ctx context.Context, filter model.TimeFilter) (*model.LoanMetrics, error) {
 	var result model.LoanMetrics
 
-	where := []string{"1=1"}
+	whereBorrow := []string{"status = $STATUS_BORROWING"}
+	whereReturned := []string{"status = $STATUS_RETURNED"}
+	whereOverdue := []string{"status = $STATUS_OVERDUE"}
+
 	args := []any{}
 	argPos := 1
 
+	borrowingPos := argPos
+	args = append(args, model.Borrowing)
+	argPos++
+
+	returnedPos := argPos
+	args = append(args, model.Returned)
+	argPos++
+
+	overduePos := argPos
+	args = append(args, model.Overdue)
+	argPos++
+
+	// time filters
 	if filter.From != nil {
-		where = append(where, fmt.Sprintf("created_at >= $%d", argPos))
-		args = append(args, &filter.From)
+		whereBorrow = append(whereBorrow,
+			fmt.Sprintf("created_at >= $%d", argPos))
+		whereReturned = append(whereReturned,
+			fmt.Sprintf("returned_at >= $%d", argPos))
+		whereOverdue = append(whereOverdue,
+			fmt.Sprintf("overdue_at >= $%d", argPos))
+
+		args = append(args, *filter.From)
 		argPos++
 	}
 
 	if filter.To != nil {
-		where = append(where, fmt.Sprintf("created_at <= $%d", argPos))
-		args = append(args, &filter.To)
+		whereBorrow = append(whereBorrow,
+			fmt.Sprintf("created_at <= $%d", argPos))
+		whereReturned = append(whereReturned,
+			fmt.Sprintf("returned_at <= $%d", argPos))
+		whereOverdue = append(whereOverdue,
+			fmt.Sprintf("overdue_at <= $%d", argPos))
+
+		args = append(args, *filter.To)
 		argPos++
 	}
 
-	borrowingPos := argPos
-	returnedPos := argPos + 1
-	overduePos := argPos + 2
-
-	args = append(args,
-		model.Borrowing,
-		model.Returned,
-		model.Overdue,
-	)
-
 	query := fmt.Sprintf(`
 		SELECT
-			COUNT(*) AS total,
-			COALESCE(SUM(CASE WHEN status = $%d THEN 1 ELSE 0 END),0) AS borrowing,
-			COALESCE(SUM(CASE WHEN status = $%d THEN 1 ELSE 0 END),0) AS returned,
-			COALESCE(SUM(CASE WHEN status = $%d THEN 1 ELSE 0 END),0) AS overdue
-		FROM loan_slips
-		WHERE %s
+			(SELECT COUNT(*) FROM loan_slips WHERE %s) AS borrowing,
+			(SELECT COUNT(*) FROM loan_slips WHERE %s) AS returned,
+			(SELECT COUNT(*) FROM loan_slips WHERE %s) AS overdue,
+			(SELECT COUNT(*) FROM loan_slips) AS total
 	`,
-		borrowingPos,
-		returnedPos,
-		overduePos,
-		strings.Join(where, " AND "),
+		strings.ReplaceAll(strings.Join(whereBorrow, " AND "),
+			"$STATUS_BORROWING", fmt.Sprintf("$%d", borrowingPos)),
+		strings.ReplaceAll(strings.Join(whereReturned, " AND "),
+			"$STATUS_RETURNED", fmt.Sprintf("$%d", returnedPos)),
+		strings.ReplaceAll(strings.Join(whereOverdue, " AND "),
+			"$STATUS_OVERDUE", fmt.Sprintf("$%d", overduePos)),
 	)
 
 	row := r.db.QueryRow(ctx, query, args...)
-
 	err := row.Scan(
-		&result.Total,
 		&result.Borrowing,
 		&result.Returned,
 		&result.Overdue,
+		&result.Total,
 	)
 	if err != nil {
 		return nil, err

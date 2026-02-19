@@ -39,10 +39,42 @@ func (r *loanSlipRepository) Create(ctx context.Context, loanSlip *model.LoanSli
 }
 
 func (r *loanSlipRepository) Update(ctx context.Context, loanSlip *model.LoanSlip) error {
+	var returnedAt any = loanSlip.ReturnedDate
+
+	if loanSlip.Status == model.Returned && loanSlip.ReturnedDate == nil {
+		returnedAt = time.Now().UTC()
+	}
+
 	_, err := r.db.Exec(ctx,
-		"UPDATE loan_slips SET name=$1, borrower_name=$2, department=$3, position=$4, description=$5, status=$6, serial_number=$7, images=$8, borrowed_date=$9, returned_date=$10, updated_at=$11 WHERE id=$12",
-		loanSlip.Name, loanSlip.BorrowerName, loanSlip.Department, loanSlip.Position, loanSlip.Description, loanSlip.Status, loanSlip.SerialNumber, loanSlip.Images, loanSlip.BorrowedDate, loanSlip.ReturnedDate, time.Now().UTC(), loanSlip.ID,
+		`UPDATE loan_slips
+		 SET name=$1,
+		     borrower_name=$2,
+		     department=$3,
+		     position=$4,
+		     description=$5,
+		     status=$6,
+		     serial_number=$7,
+		     images=$8,
+		     borrowed_date=$9,
+		     returned_date=$10,
+		     updated_at=$11,
+			 returned_at=$12
+		 WHERE id=$13`,
+		loanSlip.Name,
+		loanSlip.BorrowerName,
+		loanSlip.Department,
+		loanSlip.Position,
+		loanSlip.Description,
+		loanSlip.Status,
+		loanSlip.SerialNumber,
+		loanSlip.Images,
+		loanSlip.BorrowedDate,
+		loanSlip.ReturnedDate,
+		time.Now().UTC(),
+		returnedAt,
+		loanSlip.ID,
 	)
+
 	return err
 }
 
@@ -141,9 +173,19 @@ func (r *loanSlipRepository) FindOverdue(ctx context.Context) ([]*model.LoanSlip
 func (r *loanSlipRepository) MarkOverdueNotified(ctx context.Context, id int) error {
 	query := `
 		UPDATE loan_slips
-		SET overdue_notified = TRUE
+		SET overdue_notified = TRUE,
+		    updated_at = $2, overdue_at = $3
 		WHERE id = $1
+		  AND overdue_notified = FALSE
 	`
-	_, err := r.db.Exec(ctx, query, id)
-	return err
+	cmdTag, err := r.db.Exec(ctx, query, id, time.Now().UTC(), time.Now().UTC())
+	if err != nil {
+		return err
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return nil
+	}
+
+	return nil
 }
