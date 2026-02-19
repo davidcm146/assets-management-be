@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"log"
 )
 
 type MailProvider interface {
@@ -10,24 +9,31 @@ type MailProvider interface {
 }
 
 type MultiMailProvider struct {
-	primary  MailProvider
-	fallback MailProvider
+	providers []MailProvider
 }
 
-func NewMultiMailProvider(primary MailProvider, fallback MailProvider) MailProvider {
-	return &MultiMailProvider{
-		primary:  primary,
-		fallback: fallback,
-	}
+func NewMultiMailProvider(providers ...MailProvider) MailProvider {
+	return &MultiMailProvider{providers: providers}
 }
 
 func (m *MultiMailProvider) Send(ctx context.Context, to, subject, body string) error {
+	errCh := make(chan error, len(m.providers))
 
-	err := m.primary.Send(ctx, to, subject, body)
-	if err != nil {
-		log.Println("Primary mail failed, using fallback:", err)
-		return m.fallback.Send(ctx, to, subject, body)
+	for _, p := range m.providers {
+		go func(provider MailProvider) {
+			errCh <- provider.Send(ctx, to, subject, body)
+		}(p)
 	}
 
+	var errs []error
+	for i := 0; i < len(m.providers); i++ {
+		if err := <-errCh; err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if len(errs) > 0 {
+		return errs[0]
+	}
 	return nil
 }
