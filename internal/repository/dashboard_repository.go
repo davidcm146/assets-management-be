@@ -42,8 +42,6 @@ func (r *dashboardRepository) GetLoanMetrics(ctx context.Context, filter model.T
 	overduePos := argPos
 	args = append(args, model.Overdue)
 	argPos++
-
-	// time filters
 	if filter.From != nil {
 		whereBorrow = append(whereBorrow,
 			fmt.Sprintf("created_at >= $%d", argPos))
@@ -72,8 +70,7 @@ func (r *dashboardRepository) GetLoanMetrics(ctx context.Context, filter model.T
 		SELECT
 			(SELECT COUNT(*) FROM loan_slips WHERE %s) AS borrowing,
 			(SELECT COUNT(*) FROM loan_slips WHERE %s) AS returned,
-			(SELECT COUNT(*) FROM loan_slips WHERE %s) AS overdue,
-			(SELECT COUNT(*) FROM loan_slips) AS total
+			(SELECT COUNT(*) FROM loan_slips WHERE %s) AS overdue
 	`,
 		strings.ReplaceAll(strings.Join(whereBorrow, " AND "),
 			"$STATUS_BORROWING", fmt.Sprintf("$%d", borrowingPos)),
@@ -88,11 +85,11 @@ func (r *dashboardRepository) GetLoanMetrics(ctx context.Context, filter model.T
 		&result.Borrowing,
 		&result.Returned,
 		&result.Overdue,
-		&result.Total,
 	)
 	if err != nil {
 		return nil, err
 	}
+	result.Total = result.Borrowing + result.Returned + result.Overdue
 
 	return &result, nil
 }

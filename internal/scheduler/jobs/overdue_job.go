@@ -58,7 +58,8 @@ func (j *OverdueJob) Run() {
 			URL:    fmt.Sprintf("/loan-slips/%d", slip.ID),
 			Extra: map[string]interface{}{
 				"id":            slip.ID,
-				"name":          slip.Name,
+				"borrower_name": slip.BorrowerName,
+				"borrowed_date": slip.BorrowedDate,
 				"returned_date": slip.ReturnedDate,
 			},
 		}

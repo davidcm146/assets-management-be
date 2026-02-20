@@ -27,15 +27,20 @@ func NewDashboardService(dashboardRepo repository.DashboardRepository) Dashboard
 
 func (s *dashboardService) resolveTimeFilter(req dto.DashboardFilterRequest) (model.TimeFilter, error) {
 	var filter model.TimeFilter
-	layout := "2006-01-02"
+	layout := "02-01-2006"
+
+	loc, err := time.LoadLocation("Asia/Ho_Chi_Minh")
+	if err != nil {
+		loc = time.Local
+	}
 
 	if req.From != "" && req.To != "" {
-		from, err := time.Parse(layout, req.From)
+		from, err := time.ParseInLocation(layout, req.From, loc)
 		if err != nil {
 			return filter, fmt.Errorf("Ngày bắt đầu không hợp lệ")
 		}
 
-		to, err := time.Parse(layout, req.To)
+		to, err := time.ParseInLocation(layout, req.To, loc)
 		if err != nil {
 			return filter, fmt.Errorf("Ngày đến không hợp lệ")
 		}
@@ -45,21 +50,21 @@ func (s *dashboardService) resolveTimeFilter(req dto.DashboardFilterRequest) (mo
 		return filter, nil
 	}
 
-	now := time.Now()
+	now := time.Now().In(loc)
 
 	switch req.Period {
 	case "today":
-		start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+		start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 		filter.From = &start
 		filter.To = &now
 
 	case "month":
-		start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+		start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, loc)
 		filter.From = &start
 		filter.To = &now
 
 	case "year":
-		start := time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location())
+		start := time.Date(now.Year(), 1, 1, 0, 0, 0, 0, loc)
 		filter.From = &start
 		filter.To = &now
 	}

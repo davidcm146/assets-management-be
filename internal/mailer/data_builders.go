@@ -8,7 +8,8 @@ import (
 )
 
 type OverdueItem struct {
-	Name         string
+	BorrowerName string
+	BorrowedDate string
 	ReturnedDate string
 }
 
@@ -36,13 +37,14 @@ func BuildOverdueEmailData(notifications []*model.Notification, limit int) Overd
 		if err := json.Unmarshal(n.Payload, &payload); err != nil {
 			continue
 		}
-		name, _ := payload.Extra["name"].(string)
+		borrowerName, _ := payload.Extra["borrower_name"].(string)
 		returnedRaw, _ := payload.Extra["returned_date"].(string)
-		formattedDate := utils.FormatDate(returnedRaw)
+		borrowedRaw, _ := payload.Extra["borrowed_date"].(string)
 
 		items = append(items, OverdueItem{
-			Name:         name,
-			ReturnedDate: formattedDate,
+			BorrowerName: borrowerName,
+			BorrowedDate: utils.FormatDate(borrowedRaw),
+			ReturnedDate: utils.FormatDate(returnedRaw),
 		})
 	}
 

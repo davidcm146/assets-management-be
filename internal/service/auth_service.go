@@ -28,6 +28,9 @@ func NewAuthService(userRepo repository.UserRepository) AuthService {
 func (s *authService) LoginService(ctx context.Context, username, password string) (string, error) {
 	user, err := s.userRepo.GetByUsername(ctx, username)
 	if err != nil {
+		return "", error_middleware.NewInternal("Lỗi hệ thống")
+	}
+	if user == nil {
 		return "", error_middleware.NewUnauthorized("Tài khoản hoặc mật khẩu không đúng")
 	}
 

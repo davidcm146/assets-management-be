@@ -3,8 +3,8 @@ package model
 import "time"
 
 type TimeFilter struct {
-	From *time.Time
-	To   *time.Time
+	From *time.Time `json:"from"`
+	To   *time.Time `json:"to"`
 }
 
 type LoanMetrics struct {
