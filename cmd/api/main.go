@@ -43,6 +43,10 @@ func main() {
 	}
 	defer db.Close()
 
+	if os.Getenv("GIN_MODE") == "release" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	cld, _ := cloudinary.NewCloudinary(&cfg.Cloudinary)
 	postmarkProvider := postmark.NewProvider(&cfg.Postmark)
 	gmailProvider := gmail.NewProvider(&cfg.Gmail)

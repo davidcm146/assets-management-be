@@ -11,7 +11,10 @@ type Scheduler struct {
 }
 
 func NewScheduler() *Scheduler {
-	loc, _ := time.LoadLocation("Asia/Ho_Chi_Minh")
+	loc, err := time.LoadLocation("Asia/Ho_Chi_Minh")
+	if err != nil || loc == nil {
+		loc = time.FixedZone("ICT", 7*3600)
+	}
 
 	return &Scheduler{
 		cron: cron.New(

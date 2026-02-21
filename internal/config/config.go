@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"github.com/joho/godotenv"
 )
 
@@ -14,9 +13,7 @@ type Config struct {
 }
 
 func LoadConfig() (*Config, error) {
-	if err := godotenv.Load(); err != nil {
-		return nil, fmt.Errorf("load env file failed: %w", err)
-	}
+	_ = godotenv.Load()
 
 	cfg := &Config{
 		Server:     LoadServerConfig(),

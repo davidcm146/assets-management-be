@@ -2,15 +2,19 @@ package email
 
 import (
 	"bytes"
+	"embed"
 	"html/template"
 )
+
+//go:embed files/overdue_template.html
+var templateFS embed.FS
 
 type Renderer struct {
 	overdueTmpl *template.Template
 }
 
 func NewRenderer() (*Renderer, error) {
-	tmpl, err := template.ParseFiles("internal/mailer/files/overdue_template.html")
+	tmpl, err := template.ParseFS(templateFS, "files/overdue_template.html")
 	if err != nil {
 		return nil, err
 	}
