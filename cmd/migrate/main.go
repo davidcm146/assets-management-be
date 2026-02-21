@@ -9,9 +9,7 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		panic(fmt.Sprintf("load env file failed: %v", err))
-	}
+	_ = godotenv.Load()
 	if len(os.Args) < 2 {
 		panic("please provide 'up' or 'down' as argument")
 	}
@@ -23,7 +21,7 @@ func main() {
 		os.Getenv("DB_PORT"),
 		os.Getenv("DB_NAME"))
 
-	migrationDir := "internal/database/migrations"
+	migrationDir := "./internal/database/migrations"
 
 	switch cmd {
 	case "up":

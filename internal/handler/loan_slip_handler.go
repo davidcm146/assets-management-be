@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -13,68 +12,74 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type LoanSlipHandler struct {
-	loanSlipService *service.LoanSlipService
+type LoanSlipHandler interface {
+	LoanSlipsListHandler(c *gin.Context)
+	CreateLoanSlipHandler(c *gin.Context)
+	UpdateLoanSlipHandler(c *gin.Context)
+	LoanSlipDetailHandler(c *gin.Context)
+	DeleteLoanSlipHandler(c *gin.Context)
+}
+
+type loanSlipHandler struct {
+	loanSlipService service.LoanSlipService
 	uploader        service.Uploader
 	policy          policy.LoanSlipPolicy
 }
 
-func NewLoanSlipHandler(loanSlipService *service.LoanSlipService, uploader service.Uploader) *LoanSlipHandler {
-	return &LoanSlipHandler{
+func NewLoanSlipHandler(loanSlipService service.LoanSlipService, uploader service.Uploader) LoanSlipHandler {
+	return &loanSlipHandler{
 		loanSlipService: loanSlipService,
 		uploader:        uploader,
 	}
 }
 
-func (h *LoanSlipHandler) LoanSlipsListHandler(c *gin.Context) {
+func (h *loanSlipHandler) LoanSlipsListHandler(c *gin.Context) {
 	var query dto.LoanSlipQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
-		c.Error(&error_middleware.AppError{
-			HTTPStatus: http.StatusBadRequest,
-			Code:       error_middleware.CodeBadRequest,
-			Message:    "Yêu cầu không hợp lệ",
-		})
+		c.Error(error_middleware.NewBadRequest("Yêu cầu không hợp lệ"))
 		return
 	}
-
 	result, err := h.loanSlipService.LoanSlipsListService(c.Request.Context(), &query)
+
 	if err != nil {
-		c.Error(&error_middleware.AppError{
-			HTTPStatus: http.StatusInternalServerError,
-			Code:       error_middleware.CodeInternal,
-			Message:    "Lỗi hệ thống",
-		})
+		if _, ok := err.(*error_middleware.AppError); ok {
+			c.Error(err)
+			return
+		}
+
+		c.Error(error_middleware.NewInternal("Lỗi hệ thống"))
 		return
 	}
 
 	c.JSON(http.StatusOK, result)
 }
 
-func (h *LoanSlipHandler) CreateLoanSlipHandler(c *gin.Context) {
+func (h *loanSlipHandler) CreateLoanSlipHandler(c *gin.Context) {
 	var req dto.CreateLoanSlipRequest
 	if err := c.ShouldBind(&req); err != nil {
-		c.Error(&error_middleware.AppError{
-			HTTPStatus: http.StatusUnprocessableEntity,
-			Code:       error_middleware.CodeValidationFailed,
-			Message:    err.Error(),
-			Details:    validator.HandleValidationError(err, &req),
-		})
+		c.Error(
+			error_middleware.NewUnprocessableEntity("Dữ liệu không hợp lệ").
+				WithDetails(validator.HandleValidationError(err, &req)),
+		)
 		return
 	}
 
-	user := c.MustGet("user").(*dto.AuthUser)
+	userRaw, exists := c.Get("user")
+	if !exists {
+		c.Error(error_middleware.NewUnauthorized("Unauthorized"))
+		return
+	}
+	user := userRaw.(*dto.AuthUser)
 
-	loan, err := h.loanSlipService.CreateLoanSlipService(
-		c.Request.Context(),
-		user.ID,
-		&req,
-	)
-	if err != nil || loan == nil {
-		c.Error(&error_middleware.AppError{
-			HTTPStatus: http.StatusInternalServerError,
-			Code:       error_middleware.CodeInternal,
-			Message:    err.Error(),
-		})
+	loan, err := h.loanSlipService.CreateLoanSlipService(c.Request.Context(), user.ID, &req)
+
+	if err != nil {
+		if _, ok := err.(*error_middleware.AppError); ok {
+			c.Error(err)
+			return
+		}
+
+		c.Error(error_middleware.NewInternal("Lỗi hệ thống"))
 		return
 	}
 
@@ -114,77 +119,75 @@ func extractUpdateFields(updateDTO *dto.UpdateLoanSlipRequest) []string {
 	return fields
 }
 
-func (h *LoanSlipHandler) UpdateLoanSlipHandler(c *gin.Context) {
+func (h *loanSlipHandler) UpdateLoanSlipHandler(c *gin.Context) {
 	var req dto.UpdateLoanSlipRequest
 
 	if err := c.ShouldBind(&req); err != nil {
-		c.Error(&error_middleware.AppError{
-			HTTPStatus: http.StatusUnprocessableEntity,
-			Code:       error_middleware.CodeValidationFailed,
-			Message:    err.Error(),
-			Details:    validator.HandleValidationError(err, &req),
-		})
+		c.Error(
+			error_middleware.NewUnprocessableEntity("Dữ liệu không hợp lệ").
+				WithDetails(validator.HandleValidationError(err, &req)),
+		)
 		return
 	}
 
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.Error(&error_middleware.AppError{
-			HTTPStatus: http.StatusBadRequest,
-			Code:       error_middleware.CodeBadRequest,
-			Message:    "ID không hợp lệ",
-		})
+		c.Error(error_middleware.NewBadRequest("ID không hợp lệ"))
 		return
 	}
 
 	user := c.MustGet("user").(*dto.AuthUser)
 	fields := extractUpdateFields(&req)
 
-	forbidden := h.policy.ForbiddenFields(user.Role, fields)
-	fmt.Println(forbidden)
-	if len(forbidden) > 0 {
-		c.Error(&error_middleware.AppError{
-			HTTPStatus: http.StatusForbidden,
-			Code:       error_middleware.CodeForbidden,
-			Message:    "Bạn không có quyền cập nhật một số trường",
-			Details: gin.H{
-				"fields": forbidden,
-			},
-		})
+	if forbidden := h.policy.ForbiddenFields(user.Role, fields); len(forbidden) > 0 {
+		c.Error(
+			error_middleware.
+				NewForbidden("Bạn không có quyền cập nhật một số trường").
+				WithDetails(map[string]any{
+					"fields": forbidden,
+				}),
+		)
 		return
 	}
 
-	loan_slip, err := h.loanSlipService.UpdateLoanSlipService(c.Request.Context(), id, &req)
+	loanSlip, err := h.loanSlipService.UpdateLoanSlipService(c.Request.Context(), id, &req)
 	if err != nil {
-		c.Error(&error_middleware.AppError{
-			HTTPStatus: http.StatusInternalServerError,
-			Code:       error_middleware.CodeInternal,
-			Message:    "Lỗi hệ thống",
-		})
+		if _, ok := err.(*error_middleware.AppError); ok {
+			c.Error(err)
+			return
+		}
+
+		c.Error(error_middleware.NewInternal("Lỗi hệ thống"))
 		return
 	}
 
-	c.JSON(http.StatusOK, loan_slip)
+	c.JSON(http.StatusOK, loanSlip)
 }
 
-func (h *LoanSlipHandler) LoanSlipDetailHandler(c *gin.Context) {
+func (h *loanSlipHandler) DeleteLoanSlipHandler(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.Error(&error_middleware.AppError{
-			HTTPStatus: http.StatusBadRequest,
-			Code:       error_middleware.CodeBadRequest,
-			Message:    "ID không hợp lệ",
-		})
+		c.Error(error_middleware.NewBadRequest("ID không hợp lệ"))
+		return
+	}
+
+	if err = h.loanSlipService.Delete(c.Request.Context(), id); err != nil {
+		c.Error(err)
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (h *loanSlipHandler) LoanSlipDetailHandler(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(error_middleware.NewBadRequest("ID không hợp lệ"))
 		return
 	}
 
 	result, err := h.loanSlipService.LoanSlipDetailService(c.Request.Context(), id)
 	if err != nil {
-		c.Error(&error_middleware.AppError{
-			HTTPStatus: http.StatusNotFound,
-			Code:       error_middleware.CodeNotFound,
-			Message:    "Không tìm thấy",
-		})
+		c.Error(err)
 		return
 	}
 

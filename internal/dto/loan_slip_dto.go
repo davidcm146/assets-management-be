@@ -54,14 +54,14 @@ func NewPagedResult[T any](items []T, total int) *PagedResult[T] {
 }
 
 type CreateLoanSlipRequest struct {
-	Name         string                  `form:"name" binding:"gte=3,lte=100" label:"Tên tài sản"`
+	Name         string                  `form:"name" binding:"required,gte=3,lte=100" label:"Tên tài sản"`
 	BorrowerName string                  `form:"borrower_name" binding:"required,gte=3,lte=50" label:"Tên nhà thầu"`
 	Department   string                  `form:"department" label:"Phòng ban"`
 	Position     string                  `form:"position" label:"Chức vụ"`
-	Description  string                  `form:"description" binding:"gte=10,lte=500" label:"Mô tả"`
+	Description  string                  `form:"description" binding:"lte=500" label:"Mô tả"`
 	SerialNumber string                  `form:"serial_number" label:"Số sê ri"`
 	BorrowedDate *time.Time              `form:"borrowed_date" binding:"required" time_format:"02-01-2006" label:"Ngày mượn"`
-	ReturnedDate *time.Time              `form:"returned_date" binding:"required" time_format:"02-01-2006" label:"Ngày trả"`
+	ReturnedDate *time.Time              `form:"returned_date" binding:"required,gtefield=BorrowedDate" time_format:"02-01-2006" label:"Ngày trả"`
 	Images       []*multipart.FileHeader `form:"images" binding:"omitempty,max=5,images" label:"Hình ảnh"`
 }
 
@@ -74,6 +74,6 @@ type UpdateLoanSlipRequest struct {
 	SerialNumber *string                 `form:"serial_number" label:"Số sê ri"`
 	Status       *model.Status           `form:"status" label:"Trạng thái"`
 	BorrowedDate *time.Time              `form:"borrowed_date" time_format:"02-01-2006" label:"Ngày mượn"`
-	ReturnedDate *time.Time              `form:"returned_date" time_format:"02-01-2006" label:"Ngày trả"`
+	ReturnedDate *time.Time              `form:"returned_date" binding:"gtefield=BorrowedDate" time_format:"02-01-2006" label:"Ngày trả"`
 	Images       []*multipart.FileHeader `form:"images" binding:"omitempty,max=5,images" label:"Hình ảnh"`
 }
