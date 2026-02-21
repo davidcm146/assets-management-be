@@ -65,6 +65,7 @@ func (h *authHandler) RegisterHandler(c *gin.Context) {
 	user := &model.User{
 		Username: req.Username,
 		Password: req.Password,
+		Role:     model.ParseRole(req.Role),
 	}
 
 	if err := h.authService.RegisterService(c.Request.Context(), user); err != nil {

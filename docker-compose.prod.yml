@@ -48,11 +48,11 @@ services:
       migrate:
         condition: service_completed_successfully
     environment:
-      GIN_MODE: release
-      DB_HOST: postgres
-      DB_PORT: 5432
+      GIN_MODE: ${GIN_MODE}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
     ports:
-      - "${PORT:-8080}:8080"
+      - "${PORT}:8080"
     networks:
       - app_net
 

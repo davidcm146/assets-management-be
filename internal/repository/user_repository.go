@@ -25,10 +25,9 @@ func NewUserRepository(db *pgxpool.Pool) UserRepository {
 
 func (r *userRepository) Create(ctx context.Context, u *model.User) error {
 	hash, _ := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
-	role := model.Admin
 	_, err := r.db.Exec(ctx,
 		"INSERT INTO users (username, role, password, created_at) VALUES ($1, $2, $3, $4)",
-		u.Username, role, string(hash), time.Now().UTC(),
+		u.Username, u.Role, string(hash), time.Now().UTC(),
 	)
 	return err
 }

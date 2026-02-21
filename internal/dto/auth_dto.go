@@ -7,6 +7,7 @@ import (
 type RegisterRequest struct {
 	Username string `json:"username" binding:"required" label:"Tên đăng nhập"`
 	Password string `json:"password" binding:"required,min=8" label:"Mật khẩu"`
+	Role     string `json:"role" binding:"required" label:"Vai trò"`
 }
 
 type LoginRequest struct {
