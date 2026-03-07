@@ -15,6 +15,7 @@ type LoanSlipResponse struct {
 	Position     string     `json:"position"`
 	Description  string     `json:"description"`
 	Status       string     `json:"status"`
+	Reason       string     `json:"reason"`
 	SerialNumber string     `json:"serial_number"`
 	Images       []string   `json:"images"`
 	BorrowedDate *time.Time `json:"borrowed_date"`
@@ -73,7 +74,12 @@ type UpdateLoanSlipRequest struct {
 	Description  *string                 `form:"description" label:"Mô tả"`
 	SerialNumber *string                 `form:"serial_number" label:"Số sê ri"`
 	Status       *model.Status           `form:"status" label:"Trạng thái"`
+	Reason       *string                 `form:"reason" label:"Lý do"`
 	BorrowedDate *time.Time              `form:"borrowed_date" time_format:"02-01-2006" label:"Ngày mượn"`
 	ReturnedDate *time.Time              `form:"returned_date" binding:"gtefield=BorrowedDate" time_format:"02-01-2006" label:"Ngày trả"`
 	Images       []*multipart.FileHeader `form:"images" binding:"omitempty,max=5,images" label:"Hình ảnh"`
+}
+
+type UpdateStatusRequest struct {
+	Status string `json:"status"`
 }

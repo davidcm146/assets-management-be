@@ -17,6 +17,7 @@ type LoanSlipService interface {
 	uploadImages(ctx context.Context, files []*multipart.FileHeader) ([]string, error)
 	CreateLoanSlipService(ctx context.Context, userID int, req *dto.CreateLoanSlipRequest) (*model.LoanSlip, error)
 	UpdateLoanSlipService(ctx context.Context, id int, updateDTO *dto.UpdateLoanSlipRequest) (*model.LoanSlip, error)
+	UpdateStatusService(ctx context.Context, id int, status model.Status) (*model.LoanSlip, error)
 	LoanSlipDetailService(ctx context.Context, id int) (*dto.LoanSlipResponse, error)
 	MarkAsOverdue(ctx context.Context, id int) (*model.LoanSlip, error)
 	MarkOverdueNotified(ctx context.Context, id int) (*model.LoanSlip, error)
@@ -43,6 +44,7 @@ func mapLoanSlipToResponse(m *model.LoanSlip) *dto.LoanSlipResponse {
 		Position:     m.Position,
 		Description:  m.Description,
 		Status:       m.Status.String(),
+		Reason:       m.Reason,
 		SerialNumber: m.SerialNumber,
 		Images:       m.Images,
 		BorrowedDate: m.BorrowedDate,
@@ -152,6 +154,9 @@ func applyLoanSlipUpdate(loanSlip *model.LoanSlip, updateDTO *dto.UpdateLoanSlip
 	if updateDTO.Status != nil {
 		loanSlip.Status = model.Status(*updateDTO.Status)
 	}
+	if updateDTO.Reason != nil {
+		loanSlip.Reason = *updateDTO.Reason
+	}
 	if updateDTO.SerialNumber != nil {
 		loanSlip.SerialNumber = *updateDTO.SerialNumber
 	}
@@ -169,11 +174,11 @@ func (s *loanSlipService) UpdateLoanSlipService(ctx context.Context, id int, upd
 		return nil, error_middleware.NewNotFound("Không tìm thấy phiếu mượn")
 	}
 
-	if updateDTO.Status != nil {
-		newStatus := model.Status(*updateDTO.Status)
-
-		if !loanSlip.Status.CanTransition(newStatus) {
-			return nil, error_middleware.NewUnprocessableEntity("Không thể chuyển trạng thái từ đã trả sang đang mượn")
+	if updateDTO.ReturnedDate != nil {
+		if loanSlip.ReturnedDate != nil &&
+			!loanSlip.ReturnedDate.Equal(*updateDTO.ReturnedDate) &&
+			(updateDTO.Reason == nil || *updateDTO.Reason == "") {
+			return nil, error_middleware.NewUnprocessableEntity("Phải nhập lí do khi thay đổi ngày trả")
 		}
 	}
 
@@ -186,6 +191,25 @@ func (s *loanSlipService) UpdateLoanSlipService(ctx context.Context, id int, upd
 	}
 
 	applyLoanSlipUpdate(loanSlip, updateDTO)
+
+	if err := s.loanSlipRepo.Update(ctx, loanSlip); err != nil {
+		return nil, error_middleware.NewInternal("Cập nhật phiếu mượn thất bại")
+	}
+
+	return loanSlip, nil
+}
+
+func (s *loanSlipService) UpdateStatusService(ctx context.Context, id int, status model.Status) (*model.LoanSlip, error) {
+	loanSlip, err := s.loanSlipRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, error_middleware.NewNotFound("Không tìm thấy phiếu mượn")
+	}
+
+	if !loanSlip.Status.CanTransition(status) {
+		return nil, error_middleware.NewUnprocessableEntity("Không thể chuyển trạng thái")
+	}
+
+	loanSlip.Status = status
 
 	if err := s.loanSlipRepo.Update(ctx, loanSlip); err != nil {
 		return nil, error_middleware.NewInternal("Cập nhật thất bại")

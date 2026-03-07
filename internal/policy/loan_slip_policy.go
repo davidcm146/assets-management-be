@@ -6,6 +6,7 @@ var adminUpdateFields = map[string]bool{
 	"status":        true,
 	"borrowed_date": true,
 	"returned_date": true,
+	"reason":        true,
 }
 
 var itUpdateFields = map[string]bool{
@@ -19,6 +20,7 @@ var itUpdateFields = map[string]bool{
 	"images":        true,
 	"borrowed_date": true,
 	"returned_date": true,
+	"reason":        true,
 }
 
 type LoanSlipPolicy struct{}

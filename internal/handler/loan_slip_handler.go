@@ -6,6 +6,7 @@ import (
 
 	"github.com/davidcm146/assets-management-be.git/internal/dto"
 	"github.com/davidcm146/assets-management-be.git/internal/error_middleware"
+	"github.com/davidcm146/assets-management-be.git/internal/model"
 	"github.com/davidcm146/assets-management-be.git/internal/policy"
 	"github.com/davidcm146/assets-management-be.git/internal/service"
 	"github.com/davidcm146/assets-management-be.git/internal/validator"
@@ -18,6 +19,7 @@ type LoanSlipHandler interface {
 	UpdateLoanSlipHandler(c *gin.Context)
 	LoanSlipDetailHandler(c *gin.Context)
 	DeleteLoanSlipHandler(c *gin.Context)
+	UpdateStatusHandler(c *gin.Context)
 }
 
 type loanSlipHandler struct {
@@ -107,6 +109,9 @@ func extractUpdateFields(updateDTO *dto.UpdateLoanSlipRequest) []string {
 	if updateDTO.Status != nil {
 		fields = append(fields, "status")
 	}
+	if updateDTO.Reason != nil {
+		fields = append(fields, "reason")
+	}
 	if updateDTO.SerialNumber != nil {
 		fields = append(fields, "serial_number")
 	}
@@ -151,6 +156,41 @@ func (h *loanSlipHandler) UpdateLoanSlipHandler(c *gin.Context) {
 	}
 
 	loanSlip, err := h.loanSlipService.UpdateLoanSlipService(c.Request.Context(), id, &req)
+	if err != nil {
+		if _, ok := err.(*error_middleware.AppError); ok {
+			c.Error(err)
+			return
+		}
+
+		c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, loanSlip)
+}
+
+func (h *loanSlipHandler) UpdateStatusHandler(c *gin.Context) {
+	var req dto.UpdateStatusRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.Error(
+			error_middleware.NewUnprocessableEntity("Dữ liệu không hợp lệ").
+				WithDetails(validator.HandleValidationError(err, &req)),
+		)
+		return
+	}
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(error_middleware.NewBadRequest("ID không hợp lệ"))
+		return
+	}
+
+	loanSlip, err := h.loanSlipService.UpdateStatusService(
+		c.Request.Context(),
+		id,
+		model.ParseStatus(req.Status),
+	)
 	if err != nil {
 		if _, ok := err.(*error_middleware.AppError); ok {
 			c.Error(err)

@@ -22,6 +22,7 @@ type LoanSlip struct {
 	Position        string     `json:"position" label:"Chức vụ"`
 	Description     string     `json:"description" label:"Mô tả"`
 	Status          Status     `json:"status" label:"Trạng thái"`
+	Reason          string     `json:"reason" label:"Lý do"`
 	SerialNumber    string     `json:"serial_number" label:"Số sê ri"`
 	Images          []string   `json:"images" label:"Hình ảnh"`
 	CreatedBy       int        `json:"created_by"`

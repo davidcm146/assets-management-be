@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/davidcm146/assets-management-be.git/internal/dto"
@@ -53,19 +52,21 @@ func (r *loanSlipRepository) Update(ctx context.Context, loanSlip *model.LoanSli
 		     position=$4,
 		     description=$5,
 		     status=$6,
-		     serial_number=$7,
-		     images=$8,
-		     borrowed_date=$9,
-		     returned_date=$10,
-		     updated_at=$11,
-			 returned_at=$12
-		 WHERE id=$13`,
+			 reason=$7,
+		     serial_number=$8,
+		     images=$9,
+		     borrowed_date=$10,
+		     returned_date=$11,
+		     updated_at=$12,
+			 returned_at=$13
+		 WHERE id=$14`,
 		loanSlip.Name,
 		loanSlip.BorrowerName,
 		loanSlip.Department,
 		loanSlip.Position,
 		loanSlip.Description,
 		loanSlip.Status,
+		loanSlip.Reason,
 		loanSlip.SerialNumber,
 		loanSlip.Images,
 		loanSlip.BorrowedDate,
@@ -88,7 +89,7 @@ func (r *loanSlipRepository) Delete(ctx context.Context, id int) error {
 	}
 
 	if cmd.RowsAffected() == 0 {
-		return fmt.Errorf("loan slip not found")
+		return err
 	}
 
 	return nil
@@ -96,7 +97,7 @@ func (r *loanSlipRepository) Delete(ctx context.Context, id int) error {
 
 func (r *loanSlipRepository) FindByID(ctx context.Context, id int) (*model.LoanSlip, error) {
 	row := r.db.QueryRow(ctx,
-		`SELECT id, name, borrower_name, department, position, description, status, serial_number, images, created_by, borrowed_date, returned_date, updated_at, created_at
+		`SELECT id, name, borrower_name, department, position, description, status, reason, serial_number, images, created_by, borrowed_date, returned_date, updated_at, created_at
 		 FROM loan_slips WHERE id = $1`, id)
 
 	var loanSlip model.LoanSlip
@@ -108,6 +109,7 @@ func (r *loanSlipRepository) FindByID(ctx context.Context, id int) (*model.LoanS
 		&loanSlip.Position,
 		&loanSlip.Description,
 		&loanSlip.Status,
+		&loanSlip.Reason,
 		&loanSlip.SerialNumber,
 		&loanSlip.Images,
 		&loanSlip.CreatedBy,
@@ -116,6 +118,7 @@ func (r *loanSlipRepository) FindByID(ctx context.Context, id int) (*model.LoanS
 		&loanSlip.UpdatedAt,
 		&loanSlip.CreatedAt,
 	)
+
 	if err != nil {
 		return nil, err
 	}

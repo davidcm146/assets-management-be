@@ -23,6 +23,7 @@ CREATE TABLE loan_slips (
     position VARCHAR,
     name VARCHAR,
     description TEXT,
+    reason TEXT,
     status VARCHAR,
     serial_number VARCHAR,
     images TEXT[],
