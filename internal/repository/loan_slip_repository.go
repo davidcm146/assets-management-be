@@ -97,7 +97,7 @@ func (r *loanSlipRepository) Delete(ctx context.Context, id int) error {
 
 func (r *loanSlipRepository) FindByID(ctx context.Context, id int) (*model.LoanSlip, error) {
 	row := r.db.QueryRow(ctx,
-		`SELECT id, name, borrower_name, department, position, description, status, reason, serial_number, images, created_by, borrowed_date, returned_date, updated_at, created_at
+		`SELECT id, name, borrower_name, department, position, description, status, COALESCE(reason, '') as reason, serial_number, images, created_by, borrowed_date, returned_date, updated_at, created_at
 		 FROM loan_slips WHERE id = $1`, id)
 
 	var loanSlip model.LoanSlip
